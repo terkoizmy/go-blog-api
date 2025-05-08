@@ -3,7 +3,7 @@ package routes
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/terkoizmy/go-blog-api/api/handlers"
-	"github.com/terkoizmy/go-blog-api/api/middleware"
+	"github.com/terkoizmy/go-blog-api/internal/auth"
 )
 
 // SetupUserRoutes configures all the user related routes
@@ -25,7 +25,7 @@ func SetupUserRoutes(router *gin.Engine) {
 	// Routes that require authentication
 	// Create a group with authentication middleware
 	authorized := router.Group("/api/v1")
-	authorized.Use(middleware.AuthMiddleware())
+	authorized.Use(auth.AuthMiddleware())
 	{
 		// User routes
 		users := authorized.Group("/users")
@@ -34,7 +34,7 @@ func SetupUserRoutes(router *gin.Engine) {
 			users.GET("/me", userHandler.GetMe)
 
 			// Admin route to get all users - requires admin role
-			users.GET("", middleware.RoleMiddleware("admin"), userHandler.GetAll)
+			users.GET("", auth.RoleMiddleware("admin"), userHandler.GetAll)
 
 			// User can update their own profile or admin can update any profile
 			// The handler itself checks for permissions

@@ -2,7 +2,7 @@ package auth
 
 import (
 	"net/http"
-	"strings"
+	_ "strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/terkoizmy/go-blog-api/config"
@@ -24,14 +24,16 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization header format must be Bearer {token}"})
-			c.Abort()
-			return
-		}
+		// parts := strings.Split(authHeader, " ")
+		// fmt.Println(parts, "ini parts")
+		// fmt.Println(authHeader)
+		// if len(parts) != 2 || parts[0] != "Bearer" {
+		// 	c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization header format must be Bearer {token}"})
+		// 	c.Abort()
+		// 	return
+		// }
 
-		claims, err := ValidateToken(parts[1], cfg.JWTSecret)
+		claims, err := ValidateToken(authHeader, cfg.JWTSecret)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			c.Abort()

@@ -53,6 +53,7 @@ func main() {
 
 	// Setup routes
 	routes.SetupUserRoutes(router)
+	routes.SetupPostRoutes(router)
 
 	// Swagger documentation
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
