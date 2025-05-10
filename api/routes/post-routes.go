@@ -22,6 +22,7 @@ func SetupPostRoutes(router *gin.Engine) {
 	protected := posts.Group("")
 	protected.Use(auth.AuthMiddleware())
 	{
+		protected.GET("/own", postHandler.GetOwnPosts)
 		protected.POST("", postHandler.CreatePost)
 		protected.PUT("/:id", postHandler.UpdatePost)
 		protected.DELETE("/:id", postHandler.DeletePost)
