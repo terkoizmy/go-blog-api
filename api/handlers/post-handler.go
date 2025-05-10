@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -44,7 +45,7 @@ func generateSlug(title string) string {
 
 func removeSpecialChars(input string) string {
 	// Replace everything except letters, numbers, and space
-	re := regexp.MustCompile(`[^a-zA-Z0-9\s]+`)
+	re := regexp.MustCompile(`[^a-zA-Z0-9\s-]+`)
 	return re.ReplaceAllString(input, "")
 }
 
@@ -268,6 +269,45 @@ func (h *PostHandler) GetPostByID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, post)
+}
+
+// @Summary Get own posts
+// @Description Get all own posts
+// @Tags posts
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {array} models.Post
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /posts/own [get]
+func (h *PostHandler) GetOwnPosts(c *gin.Context) {
+	ownID, exists := c.Get("userID")
+	fmt.Println("ownID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	fmt.Println("masuk")
+	userID, ok := ownID.(uuid.UUID)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user ID format"})
+		return
+	}
+
+	var posts []models.Post
+	fmt.Println("masuk 1")
+	if result := db.DB.Preload("Categories").Where("author_id = ?", userID).Find(&posts); result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get posts"})
+		return
+	}
+	fmt.Println("masuk 2")
+	// Clean up author passwords
+	for i := range posts {
+		posts[i].Author.Password = ""
+	}
+
+	c.JSON(http.StatusOK, posts)
 }
 
 // @Summary Get post by USER ID
