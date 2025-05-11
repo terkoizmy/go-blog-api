@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -283,12 +282,10 @@ func (h *PostHandler) GetPostByID(c *gin.Context) {
 // @Router /posts/own [get]
 func (h *PostHandler) GetOwnPosts(c *gin.Context) {
 	ownID, exists := c.Get("userID")
-	fmt.Println("ownID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
-	fmt.Println("masuk")
 	userID, ok := ownID.(uuid.UUID)
 	if !ok {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user ID format"})
@@ -296,12 +293,10 @@ func (h *PostHandler) GetOwnPosts(c *gin.Context) {
 	}
 
 	var posts []models.Post
-	fmt.Println("masuk 1")
 	if result := db.DB.Preload("Categories").Where("author_id = ?", userID).Find(&posts); result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get posts"})
 		return
 	}
-	fmt.Println("masuk 2")
 	// Clean up author passwords
 	for i := range posts {
 		posts[i].Author.Password = ""
