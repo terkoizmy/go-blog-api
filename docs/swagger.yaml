@@ -45,6 +45,15 @@ definitions:
       updated_at:
         type: string
     type: object
+  models.CommentRequest:
+    properties:
+      content:
+        type: string
+      parent_id:
+        type: string
+    required:
+    - content
+    type: object
   models.LoginRequest:
     properties:
       password:
@@ -437,6 +446,124 @@ paths:
       summary: Get category by slug
       tags:
       - categories
+  /comment/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get a Comment by its id
+      parameters:
+      - description: Post ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Comment'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get comment by comment ID
+      tags:
+      - comments
+  /comment/posts/{postId}:
+    get:
+      consumes:
+      - application/json
+      description: Get a Comments post by its post ID
+      parameters:
+      - description: Post Id
+        in: path
+        name: postId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Comment'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get comments by POST ID
+      tags:
+      - comments
+    post:
+      consumes:
+      - application/json
+      description: Create a new comment on a post
+      parameters:
+      - description: Post ID
+        in: path
+        name: postId
+        required: true
+        type: string
+      - description: Comment details
+        in: body
+        name: comment
+        required: true
+        schema:
+          $ref: '#/definitions/models.CommentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Comment'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new comment
+      tags:
+      - comments
   /login:
     post:
       consumes:

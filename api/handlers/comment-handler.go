@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -23,19 +24,20 @@ func NewCommentHandler() *CommentHandler {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param post_id path string true "Post ID"
+// @Param postId path string true "Post ID"
 // @Param comment body models.CommentRequest true "Comment details"
 // @Success 201 {object} models.Comment
 // @Failure 400 {object} map[string]string
 // @Failure 401 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /posts/{post_id}/comments [post]
+// @Router /comment/posts/{postId} [post]
 func (h *CommentHandler) CreateComment(c *gin.Context) {
-	postID := c.Param("post_id")
-
+	postID := c.Param("postId")
+	fmt.Println(postID, "postID")
 	// Parse the UUID
 	postUUID, err := uuid.Parse(postID)
+	fmt.Println(postUUID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid post ID format"})
 		return
@@ -97,11 +99,10 @@ func (h *CommentHandler) CreateComment(c *gin.Context) {
 	}
 
 	// Don't return the password
-	comment.Author.Password = ""
+	// comment.Author.Password = ""
 
-	if err := db.DB.Create(&comment).Error; err != nil {
+	if err := db.DB.Preload("Author").Preload("Parent").Create(&comment).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		fmt.println("error creating comment")
 		return
 	}
 
@@ -109,27 +110,63 @@ func (h *CommentHandler) CreateComment(c *gin.Context) {
 
 }
 
-func GetAllCommentsFromPostId(c *gin.Context) {
-	postID := c.Param("postID")
+// @Summary Get comments by POST ID
+// @Description Get a Comments post by its post ID
+// @Tags comments
+// @Accept json
+// @Produce json
+// @Param postId path string true "Post Id"
+// @Success 200 {object} models.Comment
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /comment/posts/{postId} [get]
+func (h *CommentHandler) GetAllCommentsFromPostId(c *gin.Context) {
+	postId := c.Param("postId")
+
+	fmt.Println(postId, "postId")
 
 	// Parse the UUID
-	postUUID, err := uuid.Parse(postID)
+	postUUID, err := uuid.Parse(postId)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid post ID format"})
 		return
 	}
 
-	var comments []models.comment
-	if result := db.DB.Preload("Author").Preload("p").Where("id = ?", postUUID).First(&comments); result.Error != nil {
+	var comments []models.Comment
+	if result := db.DB.Preload("Author").Preload("Parent").Where("post_id = ?", postUUID).Find(&comments); result.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "post not found"})
 		return
 	}
 
-	// Clean up sensitive information
-	for i := range posts {
-		comments[i].Author.Password = ""
-		comments[i].Author.Role = ""
+	c.JSON(http.StatusOK, comments)
+}
+
+// @Summary Get comment by comment ID
+// @Description Get a Comment by its id
+// @Tags comments
+// @Accept json
+// @Produce json
+// @Param id path string true "Post ID"
+// @Success 200 {object} models.Comment
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /comment/{id} [get]
+func (h *CommentHandler) GetCommentById(c *gin.Context) {
+	commentID := c.Param("id")
+
+	// Parse the UUID
+	commentUUID, err := uuid.Parse(commentID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid comment ID format"})
+		return
 	}
 
-	c.JSON(http.StatusOK, posts)
+	var comment models.Comment
+	if result := db.DB.Preload("Author").Preload("Parent").Where("id = ?", commentUUID).First(&comment); result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "post not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, comment)
+
 }

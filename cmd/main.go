@@ -55,6 +55,7 @@ func main() {
 	routes.SetupUserRoutes(router)
 	routes.SetupPostRoutes(router)
 	routes.SetupCategoryRoutes(router)
+	routes.SetupCommentRoutes(router)
 
 	// Swagger documentation
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))

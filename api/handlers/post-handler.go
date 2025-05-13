@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -224,9 +225,10 @@ func (h *PostHandler) GetAllPosts(c *gin.Context) {
 // @Router /posts/{id} [get]
 func (h *PostHandler) GetPostByID(c *gin.Context) {
 	id := c.Param("id")
-
+	fmt.Println(id)
 	// Parse the UUID
 	postUUID, err := uuid.Parse(id)
+	fmt.Println(postUUID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid post ID format"})
 		return
