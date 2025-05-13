@@ -96,4 +96,40 @@ func (h *CommentHandler) CreateComment(c *gin.Context) {
 		}
 	}
 
+	// Don't return the password
+	comment.Author.Password = ""
+
+	if err := db.DB.Create(&comment).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		fmt.println("error creating comment")
+		return
+	}
+
+	c.JSON(http.StatusCreated, comment)
+
+}
+
+func GetAllCommentsFromPostId(c *gin.Context) {
+	postID := c.Param("postID")
+
+	// Parse the UUID
+	postUUID, err := uuid.Parse(postID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid post ID format"})
+		return
+	}
+
+	var comments []models.comment
+	if result := db.DB.Preload("Author").Preload("p").Where("id = ?", postUUID).First(&comments); result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "post not found"})
+		return
+	}
+
+	// Clean up sensitive information
+	for i := range posts {
+		comments[i].Author.Password = ""
+		comments[i].Author.Role = ""
+	}
+
+	c.JSON(http.StatusOK, posts)
 }
