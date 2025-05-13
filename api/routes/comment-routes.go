@@ -22,8 +22,8 @@ func SetupCommentRoutes(router *gin.Engine) {
 	protected.Use(auth.AuthMiddleware())
 	{
 		protected.POST("/posts/:postId", commentHandler.CreateComment)
-		// protected.PUT("/:id", categoryHandler.UpdateCategory)
-		// protected.DELETE("/:id", categoryHandler.DeleteCategory)
+		protected.PUT("/:id", commentHandler.UpdateComment)
+		protected.DELETE("/:id", commentHandler.DeleteComment)
 	}
 
 }

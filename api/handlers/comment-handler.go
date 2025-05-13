@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -34,10 +33,8 @@ func NewCommentHandler() *CommentHandler {
 // @Router /comment/posts/{postId} [post]
 func (h *CommentHandler) CreateComment(c *gin.Context) {
 	postID := c.Param("postId")
-	fmt.Println(postID, "postID")
 	// Parse the UUID
 	postUUID, err := uuid.Parse(postID)
-	fmt.Println(postUUID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid post ID format"})
 		return
@@ -123,8 +120,6 @@ func (h *CommentHandler) CreateComment(c *gin.Context) {
 func (h *CommentHandler) GetAllCommentsFromPostId(c *gin.Context) {
 	postId := c.Param("postId")
 
-	fmt.Println(postId, "postId")
-
 	// Parse the UUID
 	postUUID, err := uuid.Parse(postId)
 	if err != nil {
@@ -162,11 +157,141 @@ func (h *CommentHandler) GetCommentById(c *gin.Context) {
 	}
 
 	var comment models.Comment
-	if result := db.DB.Preload("Author").Preload("Parent").Where("id = ?", commentUUID).First(&comment); result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "post not found"})
+	if result := db.DB.Preload("Author").Preload("Parent").Preload("Replies").Where("id = ?", commentUUID).First(&comment); result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "comment not found"})
 		return
 	}
 
 	c.JSON(http.StatusOK, comment)
+
+}
+
+// @Summary Update Comment
+// @Description Update a comment
+// @Tags comments
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Comment ID"
+// @Param comment body models.CommentRequest true "Updated comment details"
+// @Success 200 {object} models.Comment
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /comment/{id} [put]
+func (h *CommentHandler) UpdateComment(c *gin.Context) {
+	id := c.Param("id")
+
+	// Parse the UUID
+	commentUUID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid comment ID format"})
+		return
+	}
+
+	var comment models.Comment
+	if result := db.DB.Preload("Author").Preload("Parent").Where("id = ?", commentUUID).First(&comment); result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Comment not found"})
+		return
+	}
+
+	// Check if user is the author or admin
+	userID, exists := c.Get("userID")
+	userRole, roleExists := c.Get("role")
+
+	if !exists || !roleExists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	authorID, idOk := userID.(uuid.UUID)
+	roleStr, roleOk := userRole.(string)
+
+	if !idOk || !roleOk || (comment.AuthorID != authorID && roleStr != "admin") {
+		c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+		return
+	}
+
+	var req models.CommentRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Update fields
+	if req.Content != "" {
+		comment.Content = req.Content
+	}
+
+	// Save the comment
+	if result := db.DB.Save(&comment); result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update comment"})
+		return
+	}
+
+	// Load updated comment with associations
+	db.DB.Preload("Author").Preload("Replies").Preload("Parent").Where("id = ?", commentUUID).First(&comment)
+
+	// Clean up sensitive information
+	comment.Author.Password = ""
+	comment.Author.Role = ""
+
+	c.JSON(http.StatusOK, comment)
+}
+
+// @Summary Delete comment
+// @Description Delete a comment
+// @Tags comments
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "COMMENT ID"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /comment/{id} [delete]
+func (h *CommentHandler) DeleteComment(c *gin.Context) {
+	id := c.Param("id")
+
+	// Parse the UUID
+	commentUUID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid comment ID format"})
+		return
+	}
+
+	var comment models.Comment
+	if result := db.DB.Preload("Author").Preload("Parent").Where("id = ?", commentUUID).First(&comment); result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Comment not found"})
+		return
+	}
+
+	// Check if user is the author or admin
+	userID, exists := c.Get("userID")
+	userRole, roleExists := c.Get("role")
+
+	if !exists || !roleExists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	authorID, idOk := userID.(uuid.UUID)
+	roleStr, roleOk := userRole.(string)
+
+	if !idOk || !roleOk || (comment.AuthorID != authorID && roleStr != "admin") {
+		c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+		return
+	}
+
+	// Delete the comment
+	if result := db.DB.Delete(&comment); result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete comment"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "comment deleted successfully"})
 
 }

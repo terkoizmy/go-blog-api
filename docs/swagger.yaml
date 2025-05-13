@@ -447,6 +447,54 @@ paths:
       tags:
       - categories
   /comment/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a comment
+      parameters:
+      - description: COMMENT ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete comment
+      tags:
+      - comments
     get:
       consumes:
       - application/json
@@ -477,6 +525,58 @@ paths:
               type: string
             type: object
       summary: Get comment by comment ID
+      tags:
+      - comments
+    put:
+      consumes:
+      - application/json
+      description: Update a comment
+      parameters:
+      - description: Comment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated comment details
+        in: body
+        name: comment
+        required: true
+        schema:
+          $ref: '#/definitions/models.CommentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Comment'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update Comment
       tags:
       - comments
   /comment/posts/{postId}:
